@@ -22,7 +22,10 @@ FAISS_DIR = Path(__file__).resolve().parents[1] / "faiss_store"
 INDEX_PATH = FAISS_DIR / "index.faiss"
 MAPPING_PATH = FAISS_DIR / "mapping.json"
 
-MODEL_NAME = os.getenv("BGE_MODEL_NAME", "BAAI/bge-base-en-v1.5")
+MODEL_NAME = os.getenv(
+    "BGE_MODEL_NAME",
+    "sentence-transformers/all-MiniLM-L6-v2"
+)
 
 _STORE_LOCK = threading.RLock()
 _MODEL_LOCK = threading.Lock()
