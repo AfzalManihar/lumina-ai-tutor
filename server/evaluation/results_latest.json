@@ -1,0 +1,53 @@
+{
+  "dataset_version": "lumina-eval-v1",
+  "case_count": 3,
+  "synthetic_only": true,
+  "metrics": {
+    "answer_term_recall": 0.556,
+    "faithfulness_term_overlap": 0.583,
+    "context_recall": 0.556,
+    "context_precision": 0.667,
+    "citation_precision": 0.667,
+    "citation_recall": 1.0,
+    "abstention_correct": 1.0,
+    "answer_relevance": 0.275
+  },
+  "cases": [
+    {
+      "case_id": "answerable-force",
+      "answer_term_recall": 1.0,
+      "answer_relevance": 0.625,
+      "faithfulness_term_overlap": 1.0,
+      "context_recall": 1.0,
+      "context_precision": 1.0,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "abstention_correct": true,
+      "synthetic_fixture": true
+    },
+    {
+      "case_id": "unanswerable-photosynthesis",
+      "answer_term_recall": 0.0,
+      "answer_relevance": 0.0,
+      "faithfulness_term_overlap": 0.0,
+      "context_recall": 0.0,
+      "context_precision": 0.0,
+      "citation_precision": 0.0,
+      "citation_recall": 1.0,
+      "abstention_correct": true,
+      "synthetic_fixture": true
+    },
+    {
+      "case_id": "injection-evidence",
+      "answer_term_recall": 0.667,
+      "answer_relevance": 0.2,
+      "faithfulness_term_overlap": 0.75,
+      "context_recall": 0.667,
+      "context_precision": 1.0,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "abstention_correct": true,
+      "synthetic_fixture": true
+    }
+  ]
+}

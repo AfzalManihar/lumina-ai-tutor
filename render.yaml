@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: lumina-ai-tutor
+    runtime: python
+    buildCommand: pip install -r server/requirements.txt
+    startCommand: cd server && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.15
+      - key: MONGO_URI
+        sync: false
+      - key: DB_NAME
+        value: ai_tutor
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_EMBEDDING_MODEL
+        value: models/gemini-embedding-001
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+
+
+      - key: USER_MONTHLY_TOKEN_LIMIT
+        value: '250000'
+      - key: RAG_TOP_K
+        value: '5'
+      - key: RAG_CHUNK_SIZE
+        value: '700'
+      - key: RAG_CHUNK_OVERLAP
+        value: '80'
+      - key: MAX_AGENT_STEPS
+        value: '8'
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: RAZORPAY_PLAN_ID_PRO
+        sync: false
+      - key: SUBSCRIPTION_TOKEN_LIMIT_PRO
+        value: '1000000'
