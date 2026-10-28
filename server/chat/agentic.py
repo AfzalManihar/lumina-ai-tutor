@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime as dt
 import os
 import re
-from enum import StrEnum
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -20,7 +20,7 @@ REQUEST_TOKEN_LIMIT = 8_000
 MAX_WORKFLOW_STEPS = max(6, min(10, int(os.getenv("MAX_AGENT_STEPS", "8"))))
 
 
-class Stage(StrEnum):
+class Stage(str, Enum):
     RECEIVED = "received"
     GUARDED = "guarded"
     MEMORY = "memory"
