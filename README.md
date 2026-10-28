@@ -1,39 +1,324 @@
-# AI Tutor
+# 🎓 Lumina Tutor — Agentic AI Teaching Assistant
 
-An AI-powered learning app built on the existing Streamlit, FastAPI, LangChain, MongoDB, and Pinecone stack. Learners can create private courses from a free-text topic without uploading a document. A PDF can optionally ground a course in a learner's own material.
+<p align="center">
+  <strong>An Adaptive AI Tutor That Teaches, Evaluates, and Adapts to Every Learner</strong>
+</p>
 
-## Requirements
+<p align="center">
+  <a href="https://lumina-tutor-agent.streamlit.app/">🚀 Live Demo</a> ·
+  <a href="https://github.com/AfzalManihar/lumina-tutor-Agent">💻 GitHub Repository</a>
+</p>
 
-- Python 3.10 or newer
-- MongoDB, local or hosted
-- A Groq API key for generating course curricula and lessons
-- Google AI and Pinecone credentials for PDF indexing and existing document-grounded chat/quiz features
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Streamlit-Frontend-FF4B4B?logo=streamlit" alt="Streamlit">
+  <img src="https://img.shields.io/badge/LangGraph-Agent_Workflows-1C3C3C" alt="LangGraph">
+  <img src="https://img.shields.io/badge/Groq-LLM-orange" alt="Groq">
+  <img src="https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb" alt="MongoDB">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+</p>
 
-Topic-only course generation uses Groq and MongoDB. PDF upload and the existing RAG features additionally need Google AI embeddings and Pinecone. The app can start without the optional RAG provider keys; those features return a configuration error until the keys are set.
+## 📌 Overview
 
-## VS Code setup
+**Lumina Tutor** is an AI-powered learning platform designed to make learning more personalized, structured, and adaptive.
 
-1. Open the `AI-Teaching-Assistant` folder in VS Code.
-2. Open **Terminal → New Terminal** and create a virtual environment:
+Instead of simply answering questions or generating quizzes, the platform aims to understand learning difficulties, explain concepts, provide worked examples, evaluate learner responses, and adapt its teaching strategy when a learner struggles.
 
-   ```powershell
-   py -3.10 -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   python -m pip install --upgrade pip
-   python -m pip install -r requirements-dev.txt
-   ```
+The project brings together two complementary capabilities:
 
-   If the `py` launcher is unavailable, use `python -m venv .venv` with Python 3.10 or newer.
+- **AI Teaching Assistant:** Topic-based course generation, structured lessons, quizzes, progress tracking, and optional PDF-grounded learning.
+- **Lumina Adaptive Tutor:** Adaptive tutoring strategies, guided hints, teach-back exercises, mastery tracking, spaced revision, and human-teacher handoff.
 
-3. In VS Code, select `.venv` as the Python interpreter.
-4. Copy `.env.example` to `.env` in the project root and fill in the values. `MONGO_URI` is required to run the API. `GROQ_API_KEY` is required for course generation. Add the Google AI and Pinecone values to enable PDF upload and legacy RAG features. Keep real keys only in `.env`; `.env` is ignored by Git.
-5. Ensure MongoDB is running and reachable at `MONGO_URI`.
+These capabilities represent complementary parts of the learning experience. The actual availability of each feature depends on the corresponding application component and its configured backend.
 
-## Run the application
+### 🎯 Core Philosophy
 
-Open two VS Code terminals from the project root.
+> An effective AI tutor should not just provide answers. It should help learners understand concepts, recognize mistakes, practice deliberately, and know when additional support is needed.
 
-**Terminal 1 — FastAPI backend**
+## ✨ Key Features
+
+| Feature | Description |
+|---|---|
+| 🧠 AI Tutoring | Generates contextual explanations using a configured language model. |
+| 📚 Topic-Based Courses | Creates private courses from a topic without requiring a PDF. |
+| 📄 PDF-Grounded Learning | Uses optional PDF sources to ground supported course and chat workflows. |
+| 🪜 Adaptive Teaching | Changes teaching strategies when learners repeatedly struggle. |
+| 💡 Guided Hints | Provides incremental support instead of immediately revealing answers. |
+| 🧩 Worked Examples | Demonstrates solutions before asking learners to solve similar problems. |
+| 📝 Practice and Quizzes | Checks responses, provides feedback, and records quiz attempts. |
+| 📊 Learning Progress | Tracks lesson completion and measurable quiz performance. |
+| 🔁 Spaced Revision | Supports revision schedules at 1, 3, 7, 14, and 30 days in the adaptive tutor workflow. |
+| 👤 Human Handoff | Creates a teacher handoff packet when additional help is needed. |
+| 🔐 Private Learning Data | Scopes course data and private document retrieval to the authenticated learner. |
+| 📈 Usage Tracking | Records token usage and applies application-level usage limits where configured. |
+| 🛡️ Agent Guardrails | Applies input limits, bounded workflows, and checks for untrusted document content. |
+
+## 🏗️ Architecture
+
+The project has two related application paths: a course platform with a FastAPI backend and a Streamlit-based adaptive tutoring experience.
+
+### 1. AI Teaching Assistant Architecture
+
+- **Frontend:** Streamlit and the static Lumina web client.
+- **Backend:** FastAPI.
+- **Language model:** Groq.
+- **Database:** MongoDB.
+- **Document retrieval:** Google AI embeddings and Pinecone.
+- **Course generation:** Topic → curriculum → modules → lessons → practice and quizzes.
+
+### 2. Adaptive Tutor Architecture
+
+- **User interface:** Streamlit.
+- **Agent workflow:** LangGraph in the separate live-engine workflow.
+- **Model inference:** Groq in the live engine.
+- **Validation:** Pydantic schemas and lesson-quality checks.
+- **Learning experience:** Diagnostic questions, progressive support, mastery checks, and teacher handoff.
+
+The hosted Streamlit demo can run with a built-in sample lesson when the separate live engine is unavailable. The complete live-engine workflow is run separately and requires its backend bridge to be reachable.
+
+## 🔄 How the Learning Workflow Works
+
+### AI Teaching Assistant
+
+1. The learner enters a topic and selects Beginner, Intermediate, or Advanced.
+2. Groq generates a structured curriculum with learning objectives, modules, and lessons.
+3. The learner opens a lesson and requests generated lesson content.
+4. The lesson presents explanations, worked examples, practice questions, and quizzes.
+5. Practice responses and quiz submissions are checked by the backend.
+6. Course data, completion status, and quiz attempts are stored in MongoDB.
+7. An optional private PDF can provide source material for supported learning workflows.
+
+### Adaptive Tutor
+
+1. A diagnostic check identifies potential knowledge gaps.
+2. The tutor introduces an exercise appropriate to the learner.
+3. If the learner struggles, the system escalates its teaching strategy.
+4. The learner receives hints, worked examples, prerequisite checks, or alternative explanations.
+5. The tutor evaluates the response and checks for mastery.
+6. If the exercise remains unresolved, the tutor can prepare a human-teacher handoff.
+7. Progress and spaced-revision information support continued learning.
+
+## 🪜 Five-Level Adaptive Teaching Strategy
+
+| Level | Strategy | Learner Experience |
+|:---:|---|---|
+| 1 | Hint + new variant | Receives a small hint and another question testing the same skill. |
+| 2 | Worked example | Studies a solved example and then attempts a partially completed task. |
+| 3 | Backward diagnosis | Answers prerequisite questions to identify the underlying gap. |
+| 4 | New representation | Receives smaller steps, an analogy, and a teach-back activity. |
+| 5 | Human handoff | The unresolved exercise is parked and a handoff packet is prepared. |
+
+### Additional Adaptation Rules
+
+- Mastery requires two correct answers on different variants of the same exercise.
+- Repeating the same mistake twice can trigger prerequisite diagnosis.
+- A correct answer with an insufficient explanation does not automatically count as mastery.
+- Different error patterns can trigger different teaching responses.
+- Parking one exercise should not necessarily prevent the learner from continuing unrelated activities.
+
+These rules describe the adaptive tutor workflow; they should not be assumed to run in every course-platform route.
+
+## 🤖 Agentic AI Workflow
+
+The course platform includes an orchestrated tutor workflow with guardrails, learner memory, routing, tutoring or optional retrieval, response checks, and usage logging.
+
+The adaptive tutor separately uses a LangGraph workflow in its live-engine implementation.
+
+A conceptual workflow is:
+
+```mermaid
+flowchart TD
+    A[Authenticated Learner] --> B[Input Guardrails]
+    B --> C[Query Router]
+    C --> D[Learner Context]
+    C --> E[Study Planner]
+    C --> F[Tool Registry]
+    F --> G[Calculator]
+    F --> H[Private PDF Retrieval]
+    C --> I[AI Tutor]
+    H --> I
+    D --> I
+    E --> I
+    I --> J[Response Checks]
+    J --> K[Practice and Quiz Feedback]
+    J --> L[Usage Tracking]
+    J --> M[Progress and Learning History]
+```
+
+The diagram is conceptual and summarizes the workflow stages; it does not imply that every stage executes for every request.
+
+### Agent Responsibilities
+
+| Component | Responsibility |
+|---|---|
+| Guardrails | Bounds inputs and treats learner/document text as untrusted. |
+| Router | Selects a supported tutoring, arithmetic, or document-question path. |
+| Planner | Helps organize multi-part study requests when needed. |
+| Tool Registry | Exposes bounded tools with validated arguments and permissions. |
+| RAG | Retrieves authorized document chunks and supports source citations. |
+| Tutor | Generates explanations and learning guidance. |
+| Evaluation | Applies response-quality heuristics and supported evidence checks. |
+| Memory | Stores permitted, account-scoped learner context. |
+| Usage Controller | Reserves estimated tokens and enforces application quotas. |
+
+**Important:** Quality rubrics and deterministic evidence checks are not guarantees of factual correctness. Ungrounded responses should not be presented as independently fact-checked.
+
+## 📚 Course Generation and Lesson Structure
+
+The topic-based course platform supports:
+
+- Creating a course without uploading a document.
+- Selecting a learning level.
+- Generating a curriculum with objectives, modules, and lessons.
+- Generating structured lesson content on demand.
+- Checking practice answers.
+- Generating quizzes and grading submitted answers.
+- Recording lesson completion and quiz history.
+- Optionally grounding a private course in an uploaded PDF.
+
+The intended teaching sequence is:
+
+**Concept explanation → Worked example → Guided practice → Quiz → Feedback and revision**
+
+Practice expected answers and quiz answer keys should remain server-side.
+
+## 📄 Retrieval-Augmented Generation (RAG)
+
+The document-grounded workflow uses embeddings and vector search to retrieve relevant material from indexed PDFs.
+
+### Document workflow
+
+1. An authorized user uploads a supported PDF.
+2. The application extracts available text and indexes document chunks.
+3. Google AI embeddings represent the chunks for semantic retrieval.
+4. Pinecone retrieves relevant chunks for a supported question.
+5. The model generates a response using retrieved context.
+6. The response can include filename and page citations derived from retrieved chunks.
+
+### Privacy and limitations
+
+- Private learner documents are filtered by owner.
+- Teacher-upload access follows the existing grade-based behavior.
+- Retrieval is limited to a bounded number of chunks and context size.
+- Scanned PDFs without extractable text are not OCR-processed by the described implementation.
+- Retrieved documents are treated as untrusted content, not system instructions.
+- Source-grounded responses are only as reliable as the retrieved evidence and verification process.
+
+Topic-only tutoring and course generation use Groq and do not require Pinecone or Google AI embeddings. PDF indexing and existing document-grounded features require their corresponding provider configuration.
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Python 3.10+ | Application logic |
+| FastAPI | Backend APIs |
+| Streamlit | Interactive application interface |
+| HTML, CSS, JavaScript | Static Lumina web client |
+| LangChain | LLM and retrieval integrations in applicable workflows |
+| LangGraph | Adaptive tutor and agent workflow orchestration |
+| Groq | Language-model inference |
+| MongoDB | Accounts, courses, progress, usage, and learning history |
+| Google AI | PDF embeddings |
+| Pinecone | Vector retrieval |
+| Pydantic | Request, response, and structured-data validation |
+| Pytest | Automated testing |
+| Render | Prepared deployment configuration |
+
+## ⚙️ Requirements
+
+- Python 3.10 or newer.
+- MongoDB, local or hosted.
+- Groq API key for topic-based course generation and configured tutor workflows.
+- Google AI API key for PDF embeddings.
+- Pinecone API key and index for document retrieval.
+- Razorpay credentials and a configured plan only if paid subscriptions are required.
+
+The optional RAG and payment features should not prevent the application from starting when their configuration is intentionally optional.
+
+## 💻 Local Setup — AI Teaching Assistant
+
+### 1. Clone the repository
+
+```powershell
+git clone https://github.com/AfzalManihar/lumina-tutor-Agent.git
+cd lumina-tutor-Agent
+```
+
+**Note:** The AI Teaching Assistant documentation describes an `AI-Teaching-Assistant` project layout. Confirm that the course-platform files are present in your checkout before using its backend commands. The public Lumina repository and that separate course-platform layout should not be assumed to contain identical files.
+
+### 2. Create a virtual environment
+
+From the relevant project root:
+
+```powershell
+py -3.10 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+```
+
+If the `py` launcher is unavailable, use:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+### 3. Install dependencies
+
+For the course-platform project, if its development requirements file exists:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+```
+
+For the public Lumina Streamlit project, use the repository's `requirements.txt`:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Install dependencies from the requirements file belonging to the application you are running.
+
+### 4. Configure environment variables
+
+Copy `.env.example` to `.env` when that example file is available. Fill in the required values:
+
+```dotenv
+MONGO_URI=
+DB_NAME=ai_tutor
+
+GROQ_API_KEY=
+GROQ_MODEL=
+
+GOOGLE_API_KEY=
+GOOGLE_EMBEDDING_MODEL=
+
+PINECONE_API_KEY=
+PINECONE_INDEX_NAME=
+
+CORS_ORIGINS=
+BACKEND_URL=
+
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+RAZORPAY_PLAN_ID_PRO=
+```
+
+Keep real credentials in environment variables. Never commit `.env` or publish API keys in source code, screenshots, logs, or README files.
+
+`MONGO_URI` is required for account-backed persistence in the course platform, and `GROQ_API_KEY` is required for model-generated course content. Google AI and Pinecone are required for the described PDF retrieval features. Razorpay is optional unless subscription billing is enabled.
+
+### 5. Start MongoDB
+
+Ensure the MongoDB service or hosted cluster is running and accessible using `MONGO_URI`.
+
+## 🚀 Run the Applications
+
+### Option A — AI Teaching Assistant API
+
+From the course-platform project root, open a terminal:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -41,9 +326,15 @@ Set-Location server
 uvicorn main:app --reload
 ```
 
-The API is at `http://127.0.0.1:8000`; interactive API documentation is at `http://127.0.0.1:8000/docs`.
+The default API address is:
 
-**Terminal 2 — Streamlit frontend**
+- API: `http://127.0.0.1:8000`
+- Interactive documentation: `http://127.0.0.1:8000/docs`
+- Health check: `http://127.0.0.1:8000/health`
+
+### Option B — Streamlit Course Client
+
+From the course-platform project root, open another terminal:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -51,140 +342,261 @@ Set-Location client
 streamlit run main.py
 ```
 
-The root `main.py` remains a health-check-only app. Use `server/main.py` for the feature API.
+### Option C — Static Lumina Web Client
 
-## Tests
+When the course-platform implementation contains the static `client/lumina/` interface and serves it from `server/main.py`, start the FastAPI service and open:
 
-Run focused tests from the project root:
+`http://127.0.0.1:8000`
+
+The static client uses the same origin as the API. It does not require a separate Vite build.
+
+### Option D — Public Lumina Streamlit Demo
+
+In the public Lumina repository, run:
+
+```powershell
+python -m pip install -r requirements.txt
+streamlit run app.py
+```
+
+Open:
+
+`http://localhost:8501`
+
+The demo can use its built-in sample lesson when the live engine is unavailable. To connect a running backend bridge in Windows PowerShell:
+
+```powershell
+$env:TUTOR_BACKEND_URL="http://127.0.0.1:8765"
+streamlit run app.py
+```
+
+The bridge must be running and reachable. The separate live-engine workflow may require additional setup in Google Colab.
+
+## 🔌 API Reference — Course Platform
+
+The following routes belong to the described FastAPI course-platform implementation. Confirm their presence in `/docs` before using them.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/courses/sources` | Upload an optional private PDF |
+| POST | `/courses` | Generate and save a topic curriculum |
+| GET | `/courses` | List the learner's courses |
+| GET | `/courses/{course_id}` | Retrieve a learner-owned course |
+| POST | `/courses/{course_id}/lessons/{lesson_id}/generate` | Generate lesson content |
+| GET | `/courses/{course_id}/lessons/{lesson_id}` | Retrieve lesson content |
+| POST | `/courses/{course_id}/lessons/{lesson_id}/practice` | Check practice responses |
+| POST | `/courses/{course_id}/lessons/{lesson_id}/quiz` | Grade and save a quiz attempt |
+| POST | `/courses/{course_id}/lessons/{lesson_id}/progress` | Save lesson completion |
+| POST | `/tutor/chat` | Run the configured tutor workflow |
+| POST | `/chat` | Use document-grounded chat |
+| POST | `/tutor/quiz` | Generate a quiz |
+| POST | `/tutor/quiz/check` | Check quiz answers |
+| GET | `/learning/history` | Retrieve learning history |
+| GET | `/learning/accuracy` | Report measurable quiz accuracy |
+| GET | `/usage` | Retrieve token usage and quota information |
+| DELETE | `/memory` | Delete the authenticated learner's saved memory |
+| POST | `/billing/webhook` | Process configured Razorpay webhook events |
+
+Account creation, authentication, and document-upload routes from the existing application are intended to remain available. Consult the running API documentation for their exact schemas and authentication requirements.
+
+## 🔐 Authentication, Privacy, and Security
+
+The course-platform design includes the following protections:
+
+- Course reads and writes are scoped to the authenticated user's ID.
+- Private PDF retrieval is filtered by owner.
+- Quiz answer keys and practice expected answers remain server-side.
+- Quiz submissions validate answer counts and course/quiz ownership.
+- Teacher PDF uploads require the appropriate authenticated role.
+- Learner memory is account-scoped and user-controlled.
+- Learner chat-topic storage requires explicit opt-in in the described agentic implementation.
+- Request size, model output, agent steps, and retrieval context are bounded.
+- Untrusted document and learner text should not override system instructions.
+- Application traces should omit prompts, answers, and document text.
+
+The browser client described for the course platform keeps credentials in memory for the current tab and sends them using HTTP Basic authentication. Deploy behind HTTPS and review the complete authentication implementation before production use.
+
+These safeguards reduce risk but do not replace a professional security audit.
+
+## 📊 Token Usage and Limits
+
+The described course platform supports application-level usage controls.
+
+- `USER_MONTHLY_TOKEN_LIMIT` defaults to 250,000 tokens per student.
+- Individual requests have a documented estimated-token cap.
+- Requests can be rejected with HTTP 429 when the estimated budget exceeds the remaining quota.
+- Estimated usage is reserved before model calls where the atomic budget implementation is enabled.
+- Provider-reported token usage is recorded when available.
+- Estimated and provider-reported counts should be distinguished in monitoring.
+
+These limits control application usage; they do not guarantee a specific provider bill. Actual provider billing and rate limits must be monitored separately.
+
+## 💳 Optional Razorpay Subscription Billing
+
+The course-platform design supports a subscription checkout flow and signed, idempotently processed webhook events.
+
+Configuration variables:
+
+```dotenv
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+RAZORPAY_PLAN_ID_PRO=
+SUBSCRIPTION_TOKEN_LIMIT_PRO=1000000
+```
+
+Before enabling real payments:
+
+1. Obtain the appropriate credentials through Razorpay's account onboarding process.
+2. Create and verify the subscription plan in the Razorpay dashboard.
+3. Configure the webhook URL and required events.
+4. Verify webhook signatures and handle duplicate events safely.
+5. Test the complete checkout and subscription lifecycle in Test Mode before enabling Live Mode.
+
+Razorpay onboarding and access to credentials depend on the account's verification requirements. If payment configuration is absent, payment-dependent activation may not work; other application features can still work if billing is implemented as optional.
+
+Never use fake credentials or another person's PAN to bypass payment-provider verification.
+
+## 🧪 Testing
+
+For the course-platform project, run its unit and API tests from the project root:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 python -m pytest server/tests -v
 ```
 
-The unit tests mock generated content and database writes; they do not call Groq, MongoDB, Gemini, or Pinecone. `server/test.py` is a safe configuration diagnostic and prints only whether selected settings exist. It does not print secret values and is not the test suite.
-
-## Step 1 behavior
-
-- Create a course using any topic and Beginner, Intermediate, or Advanced level.
-- The generated curriculum includes objectives, modules, and lessons. Generate lesson content when opening a lesson.
-- Lessons include explanations, worked examples, practice questions, and quizzes. Practice expected answers and quiz keys remain server-side; quiz feedback is returned after submission.
-- Course data, lesson completion, and quiz attempts are stored in MongoDB and scoped to the creator's authenticated user ID.
-- Optional course PDFs are limited to 15 MB, indexed as private sources, and can ground curriculum and lessons. Existing teacher uploads keep their existing public-by-grade behavior.
-
-New MongoDB collections are created automatically by MongoDB on first write: `courses`, `lesson_progress`, and `course_quiz_history`. Existing collections are unchanged; no destructive migration is required.
-
-## API routes added
-
-- `POST /courses/sources` — upload an optional private PDF
-- `POST /courses` — generate and save a topic curriculum
-- `GET /courses` and `GET /courses/{course_id}` — list and retrieve the learner's courses
-- `POST /courses/{course_id}/lessons/{lesson_id}/generate` — generate a structured lesson
-- `GET /courses/{course_id}/lessons/{lesson_id}` — retrieve learner-facing lesson content
-- `POST /courses/{course_id}/lessons/{lesson_id}/practice` — check practice responses
-- `POST /courses/{course_id}/lessons/{lesson_id}/quiz` — grade and persist a quiz attempt
-- `POST /courses/{course_id}/lessons/{lesson_id}/progress` — save lesson completion
-
-All course reads and writes are owner-scoped. The existing signup, login, document upload, chat, and quiz routes remain available.
-
-## Lumina same-origin web app and API integration
-
-The responsive Lumina web client is in `client/lumina/`. `server/main.py` serves it at `/` and exposes the API on the same origin, so the default browser API base does not point to localhost in production. The existing Streamlit client remains available separately for the original workflow.
-
-### Live API routes used by the Lumina web client
-
-- `GET /health` reports process status and whether required service keys are configured. It does not claim that MongoDB, Groq, Google AI, or Pinecone is reachable.
-- `POST /signup/student`, `GET /login` use the existing account model. Browser credentials remain in memory for the current tab and are sent with HTTP Basic; deploy behind HTTPS.
-- `POST /tutor/chat` sends the learner's question, level and at most 8 recent UI messages to the configured Groq model. The server bounds history to 6,000 characters, limits output to 700 tokens, and stores the exchange under that user's ID when MongoDB is available.
-- `POST /chat` remains the document-grounded path. Retrieval is limited to five chunks and 12,000 context characters. Private chunks are filtered by owner in both Pinecone and MongoDB. Responses include filename/page citations derived from retrieved chunks.
-- `POST /courses/sources` validates and indexes a private text-based PDF. `GET /documents/mine` lists the authenticated user's indexed private PDFs. Scanned PDFs without extractable text are not OCRed.
-- `POST /tutor/quiz` generates structured questions through Groq and stores answer keys server-side. `POST /tutor/quiz/check` validates the answer count, checks quiz ownership, returns explanations and stores the attempt.
-- `GET /learning/history` returns account-scoped tutor and quiz events.
-
-The topic tutor and quiz paths each use one model call. No percentage token savings is claimed. Provider-reported token usage is recorded when returned by the model. Retries and provider timeouts are bounded.
-
-### Local run
-
-From the repository root, configure `.env` from `.env.example`, then run:
+A concise test run is:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
-Set-Location server
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+python -m pytest server/tests -q
 ```
 
-Open `http://127.0.0.1:8000`. API docs are at `/docs`; the process/configuration endpoint is `/health`. The static HTML/CSS/JS client has no separate bundler, so there is no Vite production build command. JavaScript syntax is checked with `node --check client/lumina/app.js`.
+The described tests use mocked provider and database boundaries. They are intended to verify application logic without requiring live Groq, MongoDB, Google AI, or Pinecone calls.
 
-To keep the existing Streamlit client, run it separately with `BACKEND_URL=http://127.0.0.1:8000` and `streamlit run client/main.py` from the repository root.
+The separate diagnostic script `server/test.py`, when present, checks selected configuration flags. It is not a substitute for the test suite and should not print secret values.
 
-### Environment variable names
+For the public Lumina Streamlit project, follow the tests and scripts actually included in that repository.
 
-Set these in a local `.env` or in the hosting provider's environment configuration. Never commit actual values:
+### Suggested Manual Test Checklist
 
-- `MONGO_URI` (required for auth and persisted learner data)
-- `DB_NAME` (defaults to `ai_tutor` in the sample)
-- `GROQ_API_KEY` and optional `GROQ_MODEL` (topic tutor, courses and quizzes)
-- `GOOGLE_API_KEY` and optional `GOOGLE_EMBEDDING_MODEL` (PDF embeddings)
-- `PINECONE_API_KEY` and `PINECONE_INDEX_NAME` (PDF retrieval)
-- `CORS_ORIGINS` (comma-separated trusted origins only, if the UI is hosted separately)
-- `BACKEND_URL` (Streamlit client only; the bundled Lumina UI uses same-origin API calls)
+- [ ] Start the application with optional RAG credentials absent.
+- [ ] Verify that the health route distinguishes configuration from service connectivity.
+- [ ] Create a course using a topic without uploading a PDF.
+- [ ] Open a lesson and check that explanations and worked examples appear before practice.
+- [ ] Submit an incorrect practice answer and inspect the feedback.
+- [ ] Submit a quiz and verify that answers are graded server-side.
+- [ ] Confirm that lesson progress persists for the correct user.
+- [ ] Upload a supported PDF and verify grounded responses and citations.
+- [ ] Confirm that one learner cannot access another learner's private course or PDF.
+- [ ] Test quota enforcement and missing-provider configuration.
+- [ ] Test Razorpay in Test Mode separately from normal tutoring.
+- [ ] Verify that the adaptive tutor demo and live-engine paths behave as documented.
 
-If MongoDB is missing, the static UI and health route can start but account-backed routes return a configuration error. The health endpoint reports configuration flags, not successful remote connectivity.
+Passing mocked tests does not prove live provider availability, factual accuracy, payment settlement, or production security.
 
-### Render deployment preparation
+## ☁️ Deployment
 
-`render.yaml` defines one Python web service that serves both FastAPI and the static Lumina UI, checks `/health`, and leaves secret values as provider-managed environment variables. This folder has no Git remote or Render account connection, so the blueprint is prepared but no cloud deployment or real external credentials were verified. Connect the repository to Render, set the required environment variables above, and confirm the MongoDB network allowlist before deploying. The `CORS_ORIGINS` list can stay same-origin when the UI and API use the same Render service.
+The course-platform project includes a `render.yaml` deployment blueprint when that file is present. It is intended to run FastAPI and serve the static Lumina web client from one service.
 
-## Verification scope
+Deployment checklist:
 
-`python -m pytest server/tests -q` exercises unit and in-process ASGI API tests using fake provider/database boundaries. It verifies the question → FastAPI route → tutor provider contract → UI JSON shape, structured quiz answer-key privacy/scoring, user-scoped retrieval filters, and grounded citation metadata. These tests do not make live Groq/Gemini/Pinecone/MongoDB calls. Real credentials are needed for live chat, persistence and PDF-to-RAG verification.
+1. Push the correct project files to a Git repository.
+2. Connect the repository to Render.
+3. Configure MongoDB network access for the deployment environment.
+4. Set required environment variables in the hosting dashboard.
+5. Add optional Google AI and Pinecone credentials if PDF retrieval is required.
+6. Configure Razorpay only if paid subscriptions are being enabled.
+7. Verify the `/health` endpoint and actual service connectivity.
+8. Test account creation, course generation, persistence, retrieval, and usage limits.
+9. Configure HTTPS, backups, monitoring, log redaction, and data-retention policies.
 
-Additional API hardening: shared teacher PDFs require an authenticated Teacher account; private learner PDFs stay owner-scoped. Tutor responses include provider/model labels, latency, and provider token counts when available. The app records these fields without logging prompt text.
+The deployment configuration is a blueprint, not proof that the service has already been deployed. Live external credentials and cloud service availability must be verified separately.
 
-## Agentic tutor features
+The public Streamlit demo is available at:
 
-- **Orchestrator:** `POST /tutor/chat` coordinates guardrails, learner memory, direct tutor or optional RAG, response evaluation and usage logging. The response includes an `agents` trace so the UI can show what ran.
-- **Guardrails agent:** bounds question length, detects common prompt-injection phrases for extra-safe handling, keeps learner history role-allowlisted, and instructs both tutor and RAG prompts to treat learner/document text as untrusted. Detection is a safety signal, not a perfect classifier.
-- **Memory agent:** stores account-scoped topic frequency and preferred level in `learner_memory`; only topic keys are reused as context. `DELETE /memory` erases the learner's saved memory.
-- **RAG agent:** when the learner enables PDF grounding, retrieval is owner/grade scoped and answers include citations from indexed pages. Missing evidence is reported; retrieved documents are not instructions.
-- **Evaluation agent:** returns a simple response-quality rubric and explicitly labels tutor factual accuracy as not independently verified unless the response is source-grounded. `GET /learning/accuracy` reports measurable quiz-answer accuracy from completed attempts.
-- **Token control:** `GET /usage` shows estimated/provider-reported tokens for the current UTC month. `USER_MONTHLY_TOKEN_LIMIT` defaults to 250,000 tokens per student; individual requests are capped at 8,000 estimated tokens and are rejected with HTTP 429 when the budget estimate exceeds remaining quota. Groq usage metadata is recorded when present; quiz/RAG paths may use estimates. MongoDB atomically reserves estimated tokens before model calls so concurrent requests cannot overspend the application quota. This is still an application estimate, not a provider billing guarantee.
+**https://lumina-tutor-agent.streamlit.app/**
 
-Mongo creates `ai_usage`, `usage_budgets`, `learner_memory`, and `subscriptions` on first write. A unique user/month budget index supports atomic reservations. Configure limits and provider credentials in `.env` or hosting environment; never put real keys in the ZIP.
+Its presenter controls support demonstration of learner scenarios, including repeated incorrect answers and mastery feedback. Metrics based on scripted learner cohorts are synthetic demonstration data, not outcomes collected from real students.
 
-## Agent workflow and production boundaries
+## 📁 Repository Structure
 
-The tutor uses an explicit typed workflow with bounded state transitions. A deterministic router selects direct tutoring, safe arithmetic, or document QA; the planner is invoked only for multi-part study requests. The allowlisted tool registry exposes a bounded calculator and owner-scoped PDF search, with argument schemas, student permissions, output validation, and timeouts. RAG uses private owner/grade filters, citations, and a deterministic evidence check that falls back to a source excerpt or abstains when it cannot verify the response.
+The public Lumina Streamlit project is documented with this structure:
 
-```mermaid
-flowchart LR
-  U[Authenticated learner] --> G[Input guardrails]
-  G --> R[Query router]
-  R --> M[Consent-based memory]
-  R --> P[Bounded planner when needed]
-  R --> T[Tool registry]
-  T --> C[Calculator]
-  T --> V[Owner-scoped PDF retrieval]
-  R --> L[Groq tutor]
-  V --> L
-  L --> E[Output checks and grounded verifier]
-  E --> H[Scoped history and quiz accuracy]
-  E --> B[Atomic monthly token budget]
-  E --> O[Privacy-safe structured trace]
+```text
+lumina-tutor-Agent/
+├── app.py
+├── requirements.txt
+├── README.md
+└── LICENSE
 ```
 
-### Memory, usage, evaluation, and billing
+The course-platform implementation is documented with a separate layout:
 
-- Memory is account-scoped and user-controlled. Chat topic storage requires explicit opt-in, settings let learners disable and delete memory, and only sanitized topic labels plus learner-approved preferences are used as context.
-- `GET /usage` reports current UTC-month usage, remaining quota, reserved requests, and limit. Tutor and quiz generation reserve estimated tokens before calling the provider; provider-reported usage is committed when available, otherwise the recorded count is labeled estimated. `MAX_AGENT_STEPS` bounds the workflow, and requests have separate size/token caps.
-- `GET /learning/accuracy` measures scored quiz answers. The answer rubric is a quality heuristic; it is not a factual-accuracy score. Grounded answer checks are lexical and deterministic, so they can miss paraphrases or accept superficial overlap. Ungrounded tutor answers are explicitly marked `not_fact_checked`.
-- `python -m evaluation.run` runs the deterministic offline evaluation on `server/evaluation/dataset_v1.json` and writes `results_latest.json`. The three fixture cases are synthetic and illustrate metric wiring; their scores are not a benchmark of Groq or real learner outcomes.
-- Local JSON traces contain a hashed user reference, route, stage names, latency, token counts, retrieval count, and verification status. They omit prompts, answers, and document text. Configure log retention/redaction in the hosting platform before production.
-- Razorpay routes create a subscription checkout and activate or change the plan only from signed, idempotently processed webhooks. Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, and `RAZORPAY_PLAN_ID_PRO`, then register `/billing/webhook` in Razorpay. Live checkout and webhook operation require real account credentials and were not exercised in local tests.
+```text
+AI-Teaching-Assistant/
+├── server/
+│   ├── main.py
+│   └── tests/
+├── client/
+│   ├── main.py
+│   └── lumina/
+├── requirements-dev.txt
+├── .env.example
+└── render.yaml
+```
 
-### Known deployment requirements and limits
+These are documentation layouts for the two application paths. They should not be treated as a verified listing of a single combined repository. Update the structure after checking the actual project files.
 
-Render configuration is a deployment blueprint; no cloud service was deployed and no external provider credentials were supplied. Set MongoDB, Groq, Google AI, Pinecone, and Razorpay secrets in Render. Verify Razorpay plan pricing and webhook event configuration in its dashboard. Use HTTPS, configure backups and data retention, and monitor provider usage separately. PDF OCR, Redis-backed queues, distributed tracing vendors, semantic/reranked hybrid retrieval, calibrated model-based factual evaluation, and live payment/provider verification are not included in this local package.
+## ⚠️ Known Limitations
 
-The project test suite uses mocked provider and database boundaries. It cannot prove live service availability, payment settlement, model quality, or production security.
+- The live tutor workflow depends on its separately running engine and backend bridge.
+- The course-platform API and the public Streamlit demo are not automatically the same application.
+- Topic-only course generation does not require RAG credentials, but PDF-grounded features do.
+- Scanned PDFs without extractable text are not OCR-processed in the described course platform.
+- Deterministic evidence checks may miss paraphrases or accept superficial text overlap.
+- A response-quality rubric is not a validated factual-accuracy score.
+- Synthetic evaluation fixtures are examples of metric wiring, not real-world benchmarks.
+- Local tests do not verify live payment settlement or external-provider availability.
+- Production use requires proper authentication review, monitoring, backups, and deployment hardening.
 
+## 🗺️ Future Improvements
+
+Potential extensions include:
+
+- OCR support for scanned learning material.
+- More robust semantic and hybrid retrieval.
+- Improved source-grounded answer verification.
+- Real-world learner-outcome evaluation.
+- More detailed accessibility and multilingual support.
+- Background jobs for long-running lesson generation.
+- Distributed tracing and observability.
+- Better teacher analytics and cohort-level insights.
+- Production testing for payment webhooks and subscription lifecycle events.
+
+These are possible future improvements, not claims that the functionality is already implemented.
+
+## 👨‍💻 Author
+
+**Afzal Manihar**
+
+Interested in Agentic AI, Generative AI, Data Science, Machine Learning, and practical AI applications.
+
+- **GitHub:** https://github.com/AfzalManihar
+- **LinkedIn:** https://www.linkedin.com/in/afzal-manihar-bb0183308/
+- **Portfolio:** https://afzalmanihar.github.io
+- **Live Demo:** https://lumina-tutor-agent.streamlit.app/
+
+## 📄 License
+
+This project is licensed under the MIT License, subject to the license file included in the relevant repository. See `LICENSE` for details.
+
+---
+
+<p align="center">
+  <strong>Built to explore more adaptive, transparent, and learner-centered AI tutoring.</strong>
+</p>
+
+<p align="center">
+  ⭐ If you find the project interesting, consider starring the repository!
+</p>
