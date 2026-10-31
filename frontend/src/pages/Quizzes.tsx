@@ -4,7 +4,7 @@ import { api, errorText } from "../api/client";
 import type { AnswerEvaluation, Difficulty, Doc, Page, Quiz, QuizResult, QuizSummary } from "../api/types";
 import { DocPicker } from "../components/DocPicker";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Loading, PageHeader, Select, TextArea, TextInput } from "../components/ui";
-import { useLoad } from "../hooks";
+import { useLoad, useStoredValue } from "../hooks";
 import { fmtDate } from "../lib";
 
 function QuizRunner({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
@@ -80,7 +80,9 @@ function WrittenAnswer() {
 
 export function Quizzes() {
   const [params, setParams] = useSearchParams();
-  const openId = params.get("open");
+  const [lastOpen, setLastOpen] = useStoredValue("lumina.open.quiz");
+  const openId = params.get("open") ?? lastOpen;  // coming back to this page reopens what you had open
+  const openItem = (id: string) => { setLastOpen(id); setParams({ open: id }); };
   const list = useLoad(() => api.get<Page<QuizSummary>>("/quizzes", { limit: 30 }));
   const docs = useLoad(() => api.get<Page<Doc>>("/documents", { limit: 100 }));
   const current = useLoad(() => (openId ? api.get<Quiz>(`/quizzes/${openId}`) : Promise.resolve(null)), [openId]);
@@ -92,7 +94,7 @@ export function Quizzes() {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
       const q = await api.post<Quiz>("/quizzes", { topic, difficulty, num_questions: count, ...(selected.length ? { document_ids: selected } : {}) });
-      setParams({ open: q.id }); await list.reload();
+      openItem(q.id); await list.reload();
     } catch (x) { setErr(errorText(x)); } finally { setBusy(false); }
   }
   return (
@@ -120,7 +122,7 @@ export function Quizzes() {
             <ErrorBanner message={list.error} onRetry={list.reload} />
             {list.data?.items.length === 0 && <EmptyState title="No quizzes yet">Generate one above.</EmptyState>}
             <ul className="plain">{list.data?.items.map((q) => (
-              <li key={q.id}><button className="link" onClick={() => setParams({ open: q.id })}>{q.topic}</button>
+              <li key={q.id}><button className="link" onClick={() => openItem(q.id)}>{q.topic}</button>
                 <small className="muted"> {q.question_count} questions · {fmtDate(q.created_at)}{q.last_attempt ? ` · last ${q.last_attempt.percent}%` : ""}</small></li>))}</ul>
           </Card>
           <WrittenAnswer />

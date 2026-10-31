@@ -55,7 +55,9 @@ function LessonChat({ lesson }: { lesson: Lesson }) {
 
 export function Lessons() {
   const [params, setParams] = useSearchParams();
-  const openId = params.get("open");
+  const [lastOpen, setLastOpen] = useStoredValue("lumina.open.lesson");
+  const openId = params.get("open") ?? lastOpen;  // coming back to this page reopens what you had open
+  const openItem = (id: string) => { setLastOpen(id); setParams({ open: id }); };
   const list = useLoad(() => api.get<Page<LessonSummary>>("/lessons", { limit: 30 }));
   const docs = useLoad(() => api.get<Page<Doc>>("/documents", { limit: 100 }));
   const current = useLoad(() => (openId ? api.get<Lesson>(`/lessons/${openId}`) : Promise.resolve(null)), [openId]);
@@ -71,7 +73,7 @@ export function Lessons() {
         topic, difficulty, language, ...(objective.trim() ? { objective: objective.trim() } : {}),
         ...(selected.length ? { document_ids: selected } : {}),
       });
-      setParams({ open: l.id }); await list.reload();
+      openItem(l.id); await list.reload();
     } catch (x) { setErr(errorText(x)); } finally { setBusy(false); }
   }
   return (
@@ -98,7 +100,7 @@ export function Lessons() {
             <ErrorBanner message={list.error} onRetry={list.reload} />
             {list.data?.items.length === 0 && <EmptyState title="No lessons yet">Generate one above.</EmptyState>}
             <ul className="plain">{list.data?.items.map((l) => (
-              <li key={l.id}><button className="link" onClick={() => setParams({ open: l.id })}>{l.title}</button>
+              <li key={l.id}><button className="link" onClick={() => openItem(l.id)}>{l.title}</button>
                 <small className="muted"> {l.difficulty} · {fmtDate(l.created_at)}</small></li>))}</ul>
           </Card>
         </div>
