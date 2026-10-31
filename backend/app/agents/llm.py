@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 import random
 from dataclasses import dataclass, field
 from typing import Any, Protocol, TypeVar
@@ -14,6 +16,7 @@ from app.core.errors import ConfigError, ProviderError, RateLimitError
 from app.guardrails.output import parse_structured
 
 T = TypeVar("T", bound=BaseModel)
+logger = logging.getLogger("lumina.llm")
 
 
 @dataclass
@@ -56,6 +59,7 @@ class LLMClient:
             payload["response_format"] = {"type": "json_object"}
         headers = {"Authorization": f"Bearer {self.s.groq_api_key}"}
         last: Exception | None = None
+        bumped = False
         for attempt in range(self.s.max_retries + 1):
             try:
                 async with httpx.AsyncClient(timeout=self.s.llm_timeout_seconds, transport=self._transport) as c:
@@ -72,6 +76,19 @@ class LLMClient:
                 if attempt < self.s.max_retries:
                     await self._sleep(attempt, retry_after)
                 continue
+            if r.status_code == 400:
+                err = _error_body(r)
+                # Log the provider's reason (never the prompt or keys) so a 400 is diagnosable from server logs.
+                logger.warning("LLM HTTP 400 code=%s message=%s", err.get("code"), str(err.get("message"))[:300])
+                if err.get("code") == "json_validate_failed":
+                    # gpt-oss spends part of max_completion_tokens on reasoning; a long JSON answer then gets cut off and
+                    # the provider rejects it. Retry once with more room, then hand any partial text to the validator.
+                    if not bumped:
+                        bumped = True
+                        payload["max_completion_tokens"] = min(int(payload["max_completion_tokens"]) * 2, 6000)
+                        continue
+                    if err.get("failed_generation"):
+                        return LLMResult(text=str(err["failed_generation"]))
             if r.status_code in (401, 403):
                 raise ConfigError("The language model provider rejected the server credentials")
             if r.status_code == 404 or (r.status_code == 400 and "model" in r.text.lower()):
@@ -101,6 +118,14 @@ class LLMClient:
         usage = {"prompt": int(u.get("prompt_tokens", 0)), "completion": int(u.get("completion_tokens", 0)),
                  "total": int(u.get("total_tokens", 0)) or int(u.get("prompt_tokens", 0)) + int(u.get("completion_tokens", 0))}
         return LLMResult(text=text, usage=usage, model=data.get("model") or self.model)
+
+
+def _error_body(r: httpx.Response) -> dict:
+    try:
+        e = r.json().get("error")
+        return e if isinstance(e, dict) else {}
+    except ValueError:
+        return {}
 
 
 def _retry_after(r: httpx.Response) -> float | None:

@@ -196,3 +196,26 @@ async def test_budgeted_llm_enforces_token_budget_and_repairs():
     fake2.push("garbage", '{"answer": "fixed"}')
     out = await BudgetedLLM(fake2, 5000).structured([{"role": "user", "content": "q"}], __import__("app.schemas.learning", fromlist=["TutorOut"]).TutorOut)
     assert out.answer == "fixed" and "invalid" in fake2.calls[1][-1]["content"]
+
+
+async def test_groq_json_validate_failed_is_retried_with_more_room():
+    calls = []
+
+    def handler(req):
+        body = json.loads(req.content)
+        calls.append(body["max_completion_tokens"])
+        if len(calls) == 1:  # truncated JSON: provider answers 400 json_validate_failed
+            return httpx.Response(400, json={"error": {"code": "json_validate_failed", "message": "model output cut",
+                                                       "failed_generation": '{"answer": "par'}})
+        return httpx.Response(200, json=groq_ok())
+
+    res = await client_with(handler, llm_max_output_tokens=1000).chat([{"role": "user", "content": "hi"}], json_mode=True)
+    assert calls == [1000, 2000] and res.text == '{"ok": true}'
+
+
+async def test_groq_other_400_is_a_safe_provider_error():
+    from app.core.errors import ProviderError
+    handler = lambda req: httpx.Response(400, json={"error": {"code": "bad_request", "message": "nope"}})
+    with pytest.raises(ProviderError) as e:
+        await client_with(handler).chat([{"role": "user", "content": "hi"}])
+    assert "HTTP 400" in str(e.value)

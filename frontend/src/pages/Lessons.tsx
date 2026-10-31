@@ -2,9 +2,10 @@ import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, errorText } from "../api/client";
 import type { Difficulty, Doc, Lesson, LessonSummary, Page } from "../api/types";
+import { ChatPanel } from "../components/ChatPanel";
 import { DocPicker } from "../components/DocPicker";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Loading, PageHeader, Select, TextArea, TextInput } from "../components/ui";
-import { useLoad } from "../hooks";
+import { useLoad, useStoredValue } from "../hooks";
 import { fmtDate } from "../lib";
 
 export function LessonView({ lesson }: { lesson: Lesson }) {
@@ -35,6 +36,20 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
         </details>
       )}
     </article>
+  );
+}
+
+/** Continue chatting about a lesson. Uses the same tutor chat backend; the thread is remembered per lesson. */
+function LessonChat({ lesson }: { lesson: Lesson }) {
+  const [conv, setConv] = useStoredValue(`lumina.conv.lesson.${lesson.id}`);
+  const docIds = [...new Set(lesson.sources.map((s) => s.document_id))];
+  return (
+    <Card title="Ask about this lesson">
+      <p className="field-hint">{docIds.length ? "Answers come from the PDF this lesson was built from, with page citations." : "This lesson used general knowledge, so answers do too."}</p>
+      <ChatPanel key={lesson.id} conversationId={conv} onConversation={setConv} onMissing={() => setConv(null)}
+        documentIds={docIds.length ? docIds : null} topic={lesson.lesson.topic.slice(0, 120)} compact
+        placeholder="Type your doubt about this lesson" />
+    </Card>
   );
 }
 
@@ -87,6 +102,7 @@ export function Lessons() {
                 <small className="muted"> {l.difficulty} · {fmtDate(l.created_at)}</small></li>))}</ul>
           </Card>
         </div>
+        <div className="lesson-col">
         <Card>
           {busy && <Loading label="Generating your lesson" />}
           {!busy && openId && current.loading && <Loading label="Loading lesson" />}
@@ -94,6 +110,8 @@ export function Lessons() {
           {!busy && current.data && <LessonView lesson={current.data} />}
           {!busy && !openId && <EmptyState title="No lesson open">Generate a lesson or pick one from your list.</EmptyState>}
         </Card>
+        {!busy && current.data && openId && <LessonChat key={current.data.id} lesson={current.data} />}
+        </div>
       </div>
     </>
   );

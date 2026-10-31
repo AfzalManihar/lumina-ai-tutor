@@ -236,3 +236,5 @@ input, textarea, select { background: rgb(255 255 255 / 4%) !important; color: v
 .doc-chip { display: inline-flex; align-items: center; gap: .35rem; max-width: 100%; overflow-wrap: anywhere; }
 .chip-x { background: none; border: 0; color: inherit; cursor: pointer; font-size: 1.05rem; line-height: 1; padding: 0 .1rem; }
 .attachbar .docpicker { margin-top: .5rem; }
+.lesson-col { display: grid; gap: 1rem; min-width: 0; align-content: start; }
+.chat-empty-compact { padding: .8rem 0; } .chat-empty-compact h2 { font-size: 1.05rem; }

@@ -6,19 +6,21 @@ import { ChatPanel } from "../components/ChatPanel";
 import { AttachBar } from "../components/AttachBar";
 import { DocPicker } from "../components/DocPicker";
 import { Button, Confirm, ErrorBanner, PageHeader } from "../components/ui";
-import { useLoad } from "../hooks";
+import { useLoad, useStoredValue } from "../hooks";
 import { fmtDateTime } from "../lib";
 
 export function Tutor() {
   const [params, setParams] = useSearchParams();
-  const convId = params.get("c");
+  const [last, setLast] = useStoredValue("lumina.conv.tutor");
+  // Opening the page again resumes the last conversation, unless we arrive from "Chat" / "Ask this lesson" with ?docs=.
+  const convId = params.get("c") ?? (params.get("docs") ? null : last);
   const convs = useLoad(() => api.get<Page<Conversation>>("/tutor/conversations", { limit: 30 }));
   const docs = useLoad(() => api.get<Page<Doc>>("/documents", { limit: 100 }));
   const [selected, setSelected] = useState<string[]>(() => (params.get("docs") ?? "").split(",").filter(Boolean));
   const [confirm, setConfirm] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const select = (id: string | null) => setParams(id ? { c: id } : {}, { replace: true });
+  const select = (id: string | null) => { setLast(id); setParams(id ? { c: id } : {}, { replace: true }); };
   async function remove(id: string) {
     try { await api.del(`/tutor/conversations/${id}`); setConfirm(null); if (convId === id) select(null); await convs.reload(); }
     catch (e) { setErr(errorText(e)); }
@@ -43,7 +45,7 @@ export function Tutor() {
         </aside>
         <div className="chat-wrap">
           <ChatPanel conversationId={convId} onConversation={(id) => { select(id); void convs.reload(); }}
-            documentIds={selected} onLoaded={(c) => setSelected(c.document_ids ?? [])}
+            documentIds={selected} onLoaded={(c) => setSelected(c.document_ids ?? [])} onMissing={() => select(null)}
             above={<AttachBar docs={docs.data?.items ?? []} selected={selected} onChange={setSelected} onUploaded={docs.reload} />} />
         </div>
       </div>
@@ -54,7 +56,8 @@ export function Tutor() {
 export function AskDocuments() {
   const docs = useLoad(() => api.get<Page<Doc>>("/documents", { limit: 100 }));
   const [selected, setSelected] = useState<string[]>([]);
-  const [conv, setConv] = useState<string | null>(null);
+  const [conv, setConvState] = useStoredValue("lumina.conv.ask");
+  const setConv = (id: string | null) => setConvState(id);
   return (
     <>
       <PageHeader title="Ask your documents">Answers come only from the documents you select. If they don’t contain the answer, you will be told.</PageHeader>
@@ -62,10 +65,11 @@ export function AskDocuments() {
       <div className="split">
         <aside className="side">
           <DocPicker docs={docs.data?.items ?? []} selected={selected} onChange={(s) => { setSelected(s); }} />
-          <Button variant="ghost" onClick={() => setConv(null)}>Start a new thread</Button>
+          <Button variant="ghost" onClick={() => { setConv(null); setSelected([]); }}>Start a new thread</Button>
         </aside>
         <div className="chat-wrap">
           <ChatPanel conversationId={conv} onConversation={setConv} documentIds={selected} requireDocuments
+            onLoaded={(c) => setSelected(c.document_ids ?? [])} onMissing={() => setConv(null)}
             placeholder="Ask a question about the selected documents" />
         </div>
       </div>

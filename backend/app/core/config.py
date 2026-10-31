@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     groq_model: str = REQUIRED_GROQ_MODEL
     groq_base_url: str = "https://api.groq.com/openai/v1"
     llm_timeout_seconds: float = 30.0
-    llm_max_output_tokens: int = 1200
+    llm_max_output_tokens: int = 2500
 
     embedding_provider: Literal["", "google", "hash"] = ""
     google_api_key: str = ""

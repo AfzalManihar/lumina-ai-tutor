@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { api, errorText } from "../api/client";
+import { ApiError, api, errorText } from "../api/client";
 import type { ChatMessage, ChatResult, ConversationDetail } from "../api/types";
 import { Badge, Button, ErrorBanner, Icon, Spinner } from "./ui";
 import { Citations } from "./Citations";
@@ -9,6 +9,7 @@ import { SPRING, WordReveal } from "./fx";
 import { StepList } from "./StepList";
 
 const STARTERS = ["Explain photosynthesis step by step", "Quiz me on basic algebra", "Make me a 7-day revision plan"];
+const LESSON_STARTERS = ["Explain this lesson again in simpler words", "Give me a real-world example", "What should I remember most?"];
 const DOC_STARTERS = ["Summarise the key ideas", "List the main definitions", "What are the most important dates or numbers?"];
 
 interface Props {
@@ -18,10 +19,14 @@ interface Props {
   requireDocuments?: boolean;          // Document Q&A mode: never fall back to a general answer
   placeholder?: string;
   above?: ReactNode;                   // e.g. the attachment bar, rendered right above the composer
-  onLoaded?: (c: ConversationDetail) => void;  // lets the page restore the thread's saved document scope
+  onLoaded?: (c: ConversationDetail) => void;
+  onMissing?: () => void;              // the saved conversation no longer exists (deleted); the page should start fresh
+  topic?: string;                      // e.g. the lesson being studied
+  compact?: boolean;                   // embedded use: no big empty-state hero
+  emptyHint?: string;  // lets the page restore the thread's saved document scope
 }
 
-export function ChatPanel({ conversationId, onConversation, documentIds, requireDocuments, placeholder, above, onLoaded }: Props) {
+export function ChatPanel({ conversationId, onConversation, documentIds, requireDocuments, placeholder, above, onLoaded, onMissing, topic, compact, emptyHint }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +45,7 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
     setLoadingConv(true);
     api.get<ConversationDetail>(`/tutor/conversations/${conversationId}`)
       .then((c) => { if (alive && convRef.current === conversationId) { setMessages(c.messages); onLoaded?.(c); } })
-      .catch((e) => alive && setError(errorText(e)))
+      .catch((e) => { if (!alive) return; if (e instanceof ApiError && e.status === 404) onMissing?.(); else setError(errorText(e)); })
       .finally(() => alive && setLoadingConv(false));
     return () => { alive = false; };
   }, [conversationId]);
@@ -56,7 +61,7 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
     setMessages((m) => [...m, { id: tempId, role: "user", content: message }]);
     try {
       const r = await api.post<ChatResult>("/tutor/chat", {
-        message, conversation_id: convRef.current ?? undefined,
+        message, conversation_id: convRef.current ?? undefined, ...(topic ? { topic } : {}),
         // An array (even empty) is the thread's explicit scope; empty = detach documents, null = leave scope alone.
         ...(documentIds ? { document_ids: documentIds, use_documents: documentIds.length > 0 } : {}),
       });
@@ -95,15 +100,15 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
       <div className="chat-log" aria-live="polite" aria-label="Conversation">
         {loadingConv && <div className="loading"><Spinner /><span>Loading conversation…</span></div>}
         {!loadingConv && messages.length === 0 && (
-          <div className="chat-empty">
-            <span className="orb orb-lg" aria-hidden="true" />
-            <h2>{requireDocuments ? "Ask your documents" : "What are you studying today?"}</h2>
-            <p>{requireDocuments
+          <div className={`chat-empty${compact ? " chat-empty-compact" : ""}`}>
+            {!compact && <span className="orb orb-lg" aria-hidden="true" />}
+            <h2>{compact ? "Have a doubt about this lesson?" : requireDocuments ? "Ask your documents" : "What are you studying today?"}</h2>
+            <p>{emptyHint ?? (requireDocuments
               ? "Pick one or more documents, then ask a question. Answers cite the exact passages they come from."
-              : "Ask a question, or ask for a lesson or quiz and I will create one for you."}</p>
+              : "Ask a question, or ask for a lesson or quiz and I will create one for you.")}</p>
             {!blocked && (
               <div className="starters">
-                {(requireDocuments ? DOC_STARTERS : STARTERS).map((s) => (
+                {(compact ? LESSON_STARTERS : requireDocuments ? DOC_STARTERS : STARTERS).map((s) => (
                   <button key={s} type="button" className="chip" onClick={() => { setText(s); inputRef.current?.focus(); }}>{s}</button>
                 ))}
               </div>

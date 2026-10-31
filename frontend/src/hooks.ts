@@ -15,3 +15,15 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   useEffect(() => { void reload(); }, deps);
   return { data, error, loading, reload, setData };
 }
+
+/** A string kept in localStorage (e.g. the last open conversation) so leaving a page and coming back resumes it.
+ *  Storage can be blocked or empty, so every access is guarded and the page works without it. */
+export function useStoredValue(key: string): [string | null, (v: string | null) => void] {
+  const read = () => { try { return window.localStorage.getItem(key); } catch { return null; } };
+  const [v, setV] = useState<string | null>(read);
+  const set = useCallback((next: string | null) => {
+    setV(next);
+    try { if (next) window.localStorage.setItem(key, next); else window.localStorage.removeItem(key); } catch { /* ignore */ }
+  }, [key]);
+  return [v, set];
+}
