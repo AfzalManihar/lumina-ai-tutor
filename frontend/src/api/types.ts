@@ -19,7 +19,7 @@ export interface ChatResult extends ChatMeta {
   memory_suggestion: MemorySuggestion | null; stats: Record<string, number>;
 }
 export interface ChatMessage { id: string; role: "user" | "assistant"; content: string; created_at?: string; meta?: ChatMeta; suggestion?: MemorySuggestion | null }
-export interface Conversation { id: string; title: string; topic: string | null; message_count: number; created_at: string; updated_at: string }
+export interface Conversation { id: string; title: string; topic: string | null; message_count: number; document_ids?: string[]; created_at: string; updated_at: string }
 export interface ConversationDetail extends Conversation { messages: ChatMessage[] }
 
 export interface Doc { id: string; filename: string; kind: string; size_bytes: number; status: string; pages: number | null; chunk_count: number; error: string | null; embedding_provider: string | null; created_at: string }

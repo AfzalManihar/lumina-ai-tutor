@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { api, errorText } from "../api/client";
 import type { Conversation, Doc, Page } from "../api/types";
 import { ChatPanel } from "../components/ChatPanel";
+import { AttachBar } from "../components/AttachBar";
 import { DocPicker } from "../components/DocPicker";
 import { Button, Confirm, ErrorBanner, PageHeader } from "../components/ui";
 import { useLoad } from "../hooks";
@@ -13,8 +14,7 @@ export function Tutor() {
   const convId = params.get("c");
   const convs = useLoad(() => api.get<Page<Conversation>>("/tutor/conversations", { limit: 30 }));
   const docs = useLoad(() => api.get<Page<Doc>>("/documents", { limit: 100 }));
-  const [useDocs, setUseDocs] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() => (params.get("docs") ?? "").split(",").filter(Boolean));
   const [confirm, setConfirm] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -23,14 +23,13 @@ export function Tutor() {
     try { await api.del(`/tutor/conversations/${id}`); setConfirm(null); if (convId === id) select(null); await convs.reload(); }
     catch (e) { setErr(errorText(e)); }
   }
-  const hasReady = (docs.data?.items ?? []).some((d) => d.status === "ready");
   return (
     <>
-      <PageHeader title="Tutor chat">Ask questions, request lessons or quizzes, or switch on documents to get cited answers.</PageHeader>
+      <PageHeader title="Tutor chat">Ask anything, or attach a PDF and keep asking doubts about it. Answers from your PDF cite the page.</PageHeader>
       <ErrorBanner message={err ?? convs.error} />
       <div className="split">
         <aside className="side" aria-label="Conversations">
-          <Button variant="secondary" onClick={() => select(null)}>New conversation</Button>
+          <Button variant="secondary" onClick={() => { setSelected([]); select(null); }}>New conversation</Button>
           <ul className="convlist">
             {(convs.data?.items ?? []).map((c) => (
               <li key={c.id} className={c.id === convId ? "active" : undefined}>
@@ -43,15 +42,9 @@ export function Tutor() {
           </ul>
         </aside>
         <div className="chat-wrap">
-          <details className="docbar" open={useDocs}>
-            <summary onClick={(e) => { e.preventDefault(); setUseDocs((v) => !v); }}>
-              {useDocs ? "Answering from selected documents" : "Answer from my documents"}
-            </summary>
-            {useDocs && (hasReady ? <DocPicker docs={docs.data?.items ?? []} selected={selected} onChange={setSelected} />
-              : <p className="field-hint">Upload a document first to enable grounded answers.</p>)}
-          </details>
           <ChatPanel conversationId={convId} onConversation={(id) => { select(id); void convs.reload(); }}
-            documentIds={useDocs ? selected : null} />
+            documentIds={selected} onLoaded={(c) => setSelected(c.document_ids ?? [])}
+            above={<AttachBar docs={docs.data?.items ?? []} selected={selected} onChange={setSelected} onUploaded={docs.reload} />} />
         </div>
       </div>
     </>

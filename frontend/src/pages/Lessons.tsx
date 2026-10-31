@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, errorText } from "../api/client";
 import type { Difficulty, Doc, Lesson, LessonSummary, Page } from "../api/types";
 import { DocPicker } from "../components/DocPicker";
@@ -16,6 +16,10 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
         <Badge>{l.difficulty}</Badge>{" "}
         {lesson.grounded ? <Badge tone="mark">Built from your documents</Badge> : <Badge tone="warn">General knowledge, no sources</Badge>}
       </p>
+      {lesson.sources.length > 0 && (
+        <p><Link className="btn btn-secondary" to={`/tutor?docs=${[...new Set(lesson.sources.map((s) => s.document_id))].join(",")}`}>
+          Ask this lesson: chat about its source PDF</Link></p>
+      )}
       <h3>Objectives</h3>
       <ul>{l.objectives.map((o, i) => <li key={i}>{o}</li>)}</ul>
       {l.sections.map((s, i) => (<section key={i}><h3>{s.heading}</h3><p className="read">{s.content}</p></section>))}

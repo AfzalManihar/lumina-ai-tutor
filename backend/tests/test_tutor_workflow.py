@@ -214,3 +214,56 @@ async def test_llm_scope_check_lets_study_questions_through(client, llm):
     llm.push({"intent": "chat", "topic": "history", "confidence": 0.9})
     r = (await client.post(CHAT, json={"message": "the causes behind the first world war were complicated, right"})).json()
     assert r["status"] != "refused"
+
+
+# ---- Chat with PDF: persistent document scope across follow-ups -------------------------------------------------
+async def test_thread_keeps_document_scope_for_followups_and_reload(client, llm):
+    await register(client)
+    doc = await upload(client)
+    r1 = await client.post(CHAT, json={"message": "Where does the Calvin cycle take place?", "document_ids": [doc["id"]]})
+    b1 = r1.json()
+    assert b1["grounding_status"] == "grounded"
+    cid = b1["conversation_id"]
+    # follow-up WITHOUT document_ids: scope comes from the saved thread, still grounded in the same PDF
+    r2 = await client.post(CHAT, json={"message": "Explain that again in simpler words", "conversation_id": cid})
+    b2 = r2.json()
+    assert r2.status_code == 200 and b2["grounding_status"] == "grounded", b2
+    assert all(c["document_id"] == doc["id"] for c in b2["citations"])
+    # reload: the thread reports its document scope and both turns
+    d = (await client.get(f"/api/v1/tutor/conversations/{cid}")).json()
+    assert d["document_ids"] == [doc["id"]] and len(d["messages"]) == 4
+
+
+async def test_new_thread_does_not_inherit_old_scope(client, llm):
+    await register(client)
+    doc = await upload(client)
+    await client.post(CHAT, json={"message": "Where does the Calvin cycle take place?", "document_ids": [doc["id"]]})
+    r = await client.post(CHAT, json={"message": "Explain recursion in programming"})
+    b = r.json()
+    assert b["grounding_status"] == "not_requested" and b["citations"] == []
+    d = (await client.get(f"/api/v1/tutor/conversations/{b['conversation_id']}")).json()
+    assert d["document_ids"] == []
+
+
+async def test_foreign_or_unknown_document_ids_do_not_widen_scope(make_client, llm):
+    a = await make_client()
+    await register(a, "a@example.com")
+    doc_a = await upload(a)
+    b = await make_client()
+    await register(b, "b@example.com")
+    await upload(b, HISTORY_PAGES, "history.pdf")  # b owns a document, but not doc_a
+    r = await b.post(CHAT, json={"message": "Where does the Calvin cycle take place?", "document_ids": [doc_a["id"]],
+                                 "use_documents": True})
+    body = r.json()
+    assert body["grounding_status"] == "insufficient_evidence" and body["citations"] == []
+    d = (await b.get(f"/api/v1/tutor/conversations/{body['conversation_id']}")).json()
+    assert d["document_ids"] == []  # foreign id was never stored
+
+
+def test_retrieval_query_adds_context_only_for_followups():
+    from app.orchestration.supervisor import retrieval_query
+    hist = [{"role": "user", "content": "What is the Calvin cycle?"}, {"role": "assistant", "content": "It is ..."}]
+    assert "Calvin cycle" in retrieval_query("explain that again", hist)
+    assert retrieval_query("explain that again", []) == "explain that again"
+    long_q = "Describe in detail how chloroplast thylakoid membranes arrange photosystems for light capture today"
+    assert retrieval_query(long_q, hist) == long_q

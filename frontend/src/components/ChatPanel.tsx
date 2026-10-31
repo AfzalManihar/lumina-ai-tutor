@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { api, errorText } from "../api/client";
 import type { ChatMessage, ChatResult, ConversationDetail } from "../api/types";
@@ -17,9 +17,11 @@ interface Props {
   documentIds?: string[] | null;       // set => answers must be grounded in these documents
   requireDocuments?: boolean;          // Document Q&A mode: never fall back to a general answer
   placeholder?: string;
+  above?: ReactNode;                   // e.g. the attachment bar, rendered right above the composer
+  onLoaded?: (c: ConversationDetail) => void;  // lets the page restore the thread's saved document scope
 }
 
-export function ChatPanel({ conversationId, onConversation, documentIds, requireDocuments, placeholder }: Props) {
+export function ChatPanel({ conversationId, onConversation, documentIds, requireDocuments, placeholder, above, onLoaded }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,7 +39,7 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
     let alive = true;
     setLoadingConv(true);
     api.get<ConversationDetail>(`/tutor/conversations/${conversationId}`)
-      .then((c) => { if (alive && convRef.current === conversationId) setMessages(c.messages); })
+      .then((c) => { if (alive && convRef.current === conversationId) { setMessages(c.messages); onLoaded?.(c); } })
       .catch((e) => alive && setError(errorText(e)))
       .finally(() => alive && setLoadingConv(false));
     return () => { alive = false; };
@@ -45,7 +47,7 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
 
   useEffect(() => { endRef.current?.scrollIntoView?.({ block: "end" }); }, [messages, busy]);
 
-  const grounded = !!documentIds;
+  const grounded = !!documentIds && documentIds.length > 0;
   const blocked = requireDocuments && (!documentIds || documentIds.length === 0);
 
   async function send(message: string) {
@@ -55,7 +57,8 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
     try {
       const r = await api.post<ChatResult>("/tutor/chat", {
         message, conversation_id: convRef.current ?? undefined,
-        ...(grounded ? { document_ids: documentIds, use_documents: true } : {}),
+        // An array (even empty) is the thread's explicit scope; empty = detach documents, null = leave scope alone.
+        ...(documentIds ? { document_ids: documentIds, use_documents: documentIds.length > 0 } : {}),
       });
       if (!convRef.current) { convRef.current = r.conversation_id; onConversation(r.conversation_id); }
       setMessages((m) => [...m, {
@@ -115,10 +118,11 @@ export function ChatPanel({ conversationId, onConversation, documentIds, require
         <div ref={endRef} />
       </div>
       <ErrorBanner message={error} onRetry={lastSent ? () => void send(lastSent) : undefined} />
+      {above}
       <form className="chat-form" onSubmit={submit}>
         <label htmlFor="chat-input" className="sr-only">Message</label>
         <textarea id="chat-input" ref={inputRef} className="composer" rows={1} value={text} maxLength={4000} disabled={blocked}
-          placeholder={blocked ? "Select a document first" : placeholder ?? "Type your question"}
+          placeholder={blocked ? "Select a document first" : placeholder ?? (grounded ? "Ask a doubt about your attached document" : "Type your question")}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(e); } }} />
         <button type="submit" className="send" disabled={!text.trim() || blocked || busy} aria-label="Send">

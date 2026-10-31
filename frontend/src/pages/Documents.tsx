@@ -57,7 +57,7 @@ export function Documents() {
                 <td>{d.pages ?? "—"}</td><td>{d.chunk_count}</td><td>{fmtBytes(d.size_bytes)}</td><td>{fmtDate(d.created_at)}</td>
                 <td><div className="actions">
                   {confirm === d.id ? <Confirm message={`Delete ${d.filename}?`} onYes={() => act(d.id, () => api.del(`/documents/${d.id}`))} onNo={() => setConfirm(null)} /> : <>
-                    <Link to="/ask">Ask</Link>
+                    <Link to={`/tutor?docs=${d.id}`}>Chat</Link>
                     <Button variant="ghost" loading={working === d.id} onClick={() => act(d.id, () => api.post(`/documents/${d.id}/reindex`))}>Re-index</Button>
                     <Button variant="ghost" onClick={() => setConfirm(d.id)}>Delete</Button></>}
                 </div></td>

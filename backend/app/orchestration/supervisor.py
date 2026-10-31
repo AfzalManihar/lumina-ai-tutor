@@ -3,6 +3,7 @@ tutor, verifier, assessment and synthesis within step / tool / token / time budg
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -25,6 +26,26 @@ from app.services import learning as learning_svc
 from app.tools.registry import REGISTRY, ToolContext
 
 TUTOR_TOOLS = {"search_documents", "read_progress", "calculate", "generate_quiz", "get_passages"}
+
+
+_FOLLOWUP_RX = re.compile(
+    r"\b(it|its|that|this|those|these|they|them|again|more|another|simpler|simply|example|examples|"
+    r"previous|above|earlier|same|disadvantages?|advantages?|why|how)\b|\b(samjha|dobara|phir se|aur|iska|uska|isse)\b", re.I)
+
+
+def retrieval_query(message: str, history: list[dict]) -> str:
+    """Make a follow-up searchable on its own. 'Explain that again' has no topic words, so the previous student
+    question is prepended. Deterministic: no extra model call, and it
+    only changes the search text, never what the student sees."""
+    msg = message.strip()
+    words = re.findall(r"\w+", msg)
+    if not history or (len(words) > 12 and not _FOLLOWUP_RX.search(msg)):
+        return msg[:500]
+    if len(words) > 12:  # long enough to carry its own topic
+        return msg[:500]
+    prev_user = next((m["content"] for m in reversed(history) if m["role"] == "user"), "")
+    ctx = prev_user.strip().replace("\n", " ")[:200]
+    return f"{ctx} {msg}"[:500] if ctx else msg[:500]
 
 
 @dataclass
@@ -245,7 +266,7 @@ class Supervisor:
         limits: list[str] = []
         if grounded:
             self._go(S.RETRIEVE) if self.st.state != S.RETRIEVE else None
-            res = await self._tool("search_documents", {"query": message[:500], "document_ids": document_ids,
+            res = await self._tool("search_documents", {"query": retrieval_query(message, history), "document_ids": document_ids,
                                                         "top_k": self.s.rag_top_k})
             if res.status != "ok":
                 self._go(S.SYNTHESIZE)

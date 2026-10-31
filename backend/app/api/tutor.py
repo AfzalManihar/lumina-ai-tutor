@@ -26,15 +26,21 @@ async def chat(body: ChatIn, request: Request, user: dict = Depends(current_user
     check_user_input(body.message, s.max_input_chars)  # reject malformed input before any metering/LLM spend
     convs = ConversationService(db, s)
     topic = body.topic or (user.get("settings") or {}).get("learning_topic") or None
-    conv = await convs.get_or_create(user_id, body.conversation_id, body.message, topic)
+    # Document scope: an explicit list from the client is re-checked against ownership; otherwise the thread's
+    # saved scope is reused, so follow-ups ("explain that again") stay tied to the same PDF(s).
+    requested = await convs.owned_ready_documents(user_id, body.document_ids) if body.document_ids is not None else None
+    conv = await convs.get_or_create(user_id, body.conversation_id, body.message, topic, requested)
+    if requested is not None:
+        await convs.set_scope(user_id, conv, requested)
+    scope = requested if requested is not None else list(conv.get("document_ids") or [])
     history, summary = await convs.context(user_id, conv)
     has_docs = await db.documents.count_documents({"user_id": user_id, "status": "ready"}) > 0
     retriever = get_lazy_retriever(request)
 
     async with metered(db, s, get_llm_for(request), user_id, "chat", request.state.request_id) as (llm, trace):
         sup = Supervisor(db, s, llm, trace, retriever, user)
-        result = await sup.run(body.message, history=history, summary=summary, document_ids=body.document_ids,
-                               use_documents=body.use_documents, topic=topic, has_documents=has_docs)
+        result = await sup.run(body.message, history=history, summary=summary, document_ids=scope if (requested is not None or scope) else None,
+                               use_documents=body.use_documents or bool(scope) or bool(body.document_ids), topic=topic, has_documents=has_docs)
 
     answer = redact(result.answer, s.secret_values)
     meta = {"intent": result.intent, "grounding_status": result.grounding_status, "citations": result.citations,
