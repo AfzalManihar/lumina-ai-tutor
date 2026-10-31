@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://lumina-tutor-agent.streamlit.app/">
+  <a href="https://lumina-ai-tutor-b5229.containers.snapdeploy.app/app">
     <img src="https://img.shields.io/badge/🚀_LIVE_DEMO-Try_Lumina_Tutor-7C3AED?style=for-the-badge" alt="Live Demo">
   </a>
-  <a href="https://github.com/AfzalManihar/lumina-tutor-Agent">
+  <a href="https://github.com/AfzalManihar/lumina-ai-tutor">
     <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub">
   </a>
 </p>
@@ -20,7 +20,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python" alt="Python">
   <img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi" alt="FastAPI">
-  <img src="https://img.shields.io/badge/Streamlit-Frontend-FF4B4B?logo=streamlit" alt="Streamlit">
+  <img src="https://img.shields.io/badge/SnapDeploy-Deployment-6C5CE7" alt="SnapDeploy">
   <img src="https://img.shields.io/badge/LangGraph-Agent_Workflows-1C3C3C" alt="LangGraph">
   <img src="https://img.shields.io/badge/Groq-LLM-orange" alt="Groq">
   <img src="https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb" alt="MongoDB">
@@ -73,9 +73,9 @@ Feature availability depends on the application component, configuration, and co
 
 ## 🖥️ Live Demo
 
-**[Launch Lumina Tutor](https://lumina-tutor-agent.streamlit.app/)**
+**[Launch Lumina Tutor](https://lumina-ai-tutor-b5229.containers.snapdeploy.app/app)**
 
-The hosted Streamlit application provides a demonstration mode with a built-in sample lesson:
+The hosted application deployed on SnapDeploy provides a demonstration mode with a built-in sample lesson:
 
 *Fetch a web page with Python requests.*
 
@@ -85,7 +85,7 @@ The complete LangGraph engine runs separately in Google Colab and can connect th
 
 ### Try It in 60 Seconds
 
-1. Open the [live demo](https://lumina-tutor-agent.streamlit.app/).
+1. Open the [live demo](https://lumina-ai-tutor-b5229.containers.snapdeploy.app/app).
 2. Find **Presenter controls** in the sidebar.
 3. Select **Presenter: one weak spot** during the quick check.
 4. Repeatedly select **Presenter: wrong answer**.
@@ -101,7 +101,7 @@ The project documents a course-generation platform and an adaptive tutoring appl
 
 ### AI Teaching Assistant
 
-- **Frontend:** Streamlit and a static HTML/CSS/JavaScript Lumina client.
+- **Frontend:** React, Vite, TypeScript, HTML, CSS, and JavaScript.
 - **Backend:** FastAPI.
 - **LLM provider:** Groq.
 - **Database:** MongoDB.
@@ -111,7 +111,7 @@ The project documents a course-generation platform and an adaptive tutoring appl
 
 ### Adaptive Tutor
 
-- **Interface:** Streamlit.
+- **Interface:** React-based web interface.
 - **Agent orchestration:** LangGraph in the live-engine workflow.
 - **Model inference:** Groq in the live engine.
 - **Data validation:** Pydantic.
@@ -264,7 +264,7 @@ RAG enables supported document-grounded workflows to use a learner's own study m
 |---|---|
 | Python 3.10+ | Core application logic |
 | FastAPI | Backend APIs |
-| Streamlit | Interactive UI |
+| React, Vite, TypeScript | Interactive UI |
 | HTML, CSS, JavaScript | Static web client |
 | LangChain | LLM and retrieval integrations in applicable workflows |
 | LangGraph | Agent workflow orchestration |
@@ -313,7 +313,7 @@ python -m venv .venv
 
 ### Step 3: Install Dependencies
 
-For the public Lumina Streamlit project:
+For the Lumina project:
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -348,7 +348,7 @@ GOOGLE_EMBEDDING_MODEL=
 PINECONE_API_KEY=
 PINECONE_INDEX_NAME=
 
-# Optional separate Streamlit client
+# Optional frontend/backend connection
 BACKEND_URL=
 
 # Optional trusted frontend origins
@@ -375,17 +375,18 @@ Ensure MongoDB is running and reachable if you are using the course-platform app
 
 ## 🚀 Running the Application
 
-### Option A: Run the Public Lumina Streamlit Demo
+### Option A: Run the Lumina Frontend
 
 From the public repository root:
 
 ```powershell
-python -m streamlit run app.py
+npm install
+npm run dev
 ```
 
 Open:
 
-**http://localhost:8501**
+**http://localhost:5173**
 
 The demo can run with its built-in sample lesson when the live engine is unavailable.
 
@@ -405,14 +406,14 @@ Default endpoints:
 - API documentation: `http://127.0.0.1:8000/docs`
 - Health endpoint: `http://127.0.0.1:8000/health`
 
-### Option C: Run the Course-Platform Streamlit Client
+### Option C: Run the Course-Platform Frontend
 
 Open another terminal from the course-platform root:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 Set-Location client
-streamlit run main.py
+npm run dev
 ```
 
 ### Option D: Run the Static Lumina Web Client
@@ -425,20 +426,20 @@ The described static client uses the same origin as the API and does not require
 
 ### Connect the Adaptive Tutor to a Live Engine
 
-If the adaptive tutor's backend bridge is running locally, configure its address before launching Streamlit.
+If the adaptive tutor's backend bridge is running locally, configure its address before launching the frontend.
 
 **Windows PowerShell:**
 
 ```powershell
 $env:TUTOR_BACKEND_URL="http://127.0.0.1:8765"
-streamlit run app.py
+npm run dev
 ```
 
 **macOS/Linux:**
 
 ```bash
 export TUTOR_BACKEND_URL="http://127.0.0.1:8765"
-streamlit run app.py
+npm run dev
 ```
 
 The live engine must be running and reachable. Its complete workflow is documented as a separate Google Colab-based component.
@@ -585,11 +586,11 @@ A deployment blueprint does not mean the application has already been deployed o
 
 The live demo is available at:
 
-**https://lumina-tutor-agent.streamlit.app/**
+**https://lumina-ai-tutor-b5229.containers.snapdeploy.app/app**
 
 ## 📁 Project Structure
 
-The public Lumina Streamlit repository is documented with this layout:
+The Lumina project is documented with this layout:
 
 ```text
 lumina-tutor-Agent/
@@ -619,7 +620,7 @@ These are the documented layouts for the two application paths, not a verified l
 ## ⚠️ Known Limitations
 
 - The live adaptive tutor requires its separate engine and reachable backend bridge.
-- The course-platform API and public Streamlit demo are not automatically the same running application.
+- The course-platform API and deployed SnapDeploy application are not automatically the same running application.
 - PDF retrieval requires its configured embedding and vector-search providers.
 - Scanned PDFs without extractable text are not OCR-processed in the described course platform.
 - Deterministic evidence checks may miss paraphrases or accept superficial text overlap.
@@ -653,7 +654,7 @@ Interested in Agentic AI, Generative AI, Data Science, Machine Learning, and bui
 - 🌐 **Portfolio:** https://afzalmanihar.github.io
 - 💻 **GitHub:** https://github.com/AfzalManihar
 - 🔗 **LinkedIn:** https://www.linkedin.com/in/afzal-manihar-bb0183308/
-- 🚀 **Live Demo:** https://lumina-tutor-agent.streamlit.app/
+- 🚀 **Live Demo:** https://lumina-ai-tutor-b5229.containers.snapdeploy.app/app
 
 ## 📄 License
 
