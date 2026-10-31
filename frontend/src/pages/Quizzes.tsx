@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, errorText } from "../api/client";
 import type { AnswerEvaluation, Difficulty, Doc, Page, Quiz, QuizResult, QuizSummary } from "../api/types";
@@ -81,7 +81,10 @@ function WrittenAnswer() {
 export function Quizzes() {
   const [params, setParams] = useSearchParams();
   const [lastOpen, setLastOpen] = useStoredValue("lumina.open.quiz");
-  const openId = params.get("open") ?? lastOpen;  // coming back to this page reopens what you had open
+  const urlOpen = params.get("open");
+  const openId = urlOpen ?? lastOpen;  // coming back to this page reopens what you had open
+  // Also remember ids that arrive via a link (e.g. "Open the lesson" in a chat answer), not only list clicks.
+  useEffect(() => { if (urlOpen) setLastOpen(urlOpen); }, [urlOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   const openItem = (id: string) => { setLastOpen(id); setParams({ open: id }); };
   const list = useLoad(() => api.get<Page<QuizSummary>>("/quizzes", { limit: 30 }));
   const docs = useLoad(() => api.get<Page<Doc>>("/documents", { limit: 100 }));
